@@ -145,7 +145,6 @@ tr:last-child td{border-bottom:none;}
     <div class="err-hint" id="origin-err">休日出勤日は土曜か日曜を選んでください</div>
     <div style="font-size:11px;color:#bbb;margin-top:6px;">選択しなくても登録できます。後から備考に記載も可。</div>
   </div>
-  </div>
   <div class="form-row"><label>備考（任意）</label><input type="text" id="f-note" placeholder="例：月末繁忙のため"></div>
   <div class="err-hint" id="dup-err">同じメンバー・日付・種別の登録が既にあります。</div>
   <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
@@ -938,7 +937,15 @@ function renderList(){
   const filterSel=document.getElementById('filter-member');
   const curFilter=filterSel.value;
   filterSel.innerHTML='<option value="">すべてのメンバー</option>';
-  [...new Set(shifts.map(s=>s.member))].sort().forEach(name=>{
+  const memberOrder=MEMBERS.map(m=>m.name);
+  const uniqueMembers=[...new Set(shifts.map(s=>s.member))];
+  const sortedMembers=uniqueMembers.sort((a,b)=>{
+    const ai=memberOrder.indexOf(a);const bi=memberOrder.indexOf(b);
+    if(ai===-1&&bi===-1)return a.localeCompare(b);
+    if(ai===-1)return 1;if(bi===-1)return -1;
+    return ai-bi;
+  });
+  sortedMembers.forEach(name=>{
     const o=document.createElement('option');o.value=name;o.textContent=name;filterSel.appendChild(o);
   });
   if(curFilter)filterSel.value=curFilter;

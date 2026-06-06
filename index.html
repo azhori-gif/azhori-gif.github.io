@@ -9,7 +9,7 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP',sans-serif;font-size:14px;line-height:1.6;color:#1a1a1a;background:#f5f5f3;}
 .wrap{max-width:960px;margin:0 auto;padding:1.5rem;}
 h1{font-size:18px;font-weight:600;margin-bottom:1.5rem;color:#1a1a1a;}
-.card{background:#fff;border:1px solid #e8e8e5;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;}
+.card{background:#fff;border:1px solid #e8e8e5;border-radius:12px;padding:1rem 1.5rem;margin-bottom:1rem;}
 .sec-ttl{font-size:15px;font-weight:600;margin-bottom:1rem;color:#1a1a1a;}
 .form-row{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;}
 .form-row label{font-size:12px;color:#888;}
@@ -176,7 +176,7 @@ tr:last-child td{border-bottom:none;}
         <th style="width:110px;">種別</th>
         <th style="width:100px;">振替元</th>
         <th>備考</th>
-        <th style="width:90px;text-align:center;">操作</th>
+        <th style="width:110px;text-align:center;">操作</th>
       </tr></thead>
       <tbody id="shift-list-body"><tr><td colspan="7" class="empty">まだ登録がありません</td></tr></tbody>
     </table>
@@ -951,7 +951,7 @@ function renderList(){
       oc=s.originDate?`<span style="font-size:12px;color:#888;">${s.originDate.slice(5)}<span style="color:#a32d2d;">(${DOW_NAMES[new Date(s.originDate).getDay()]})</span>出勤分</span>`:'<span style="font-size:11px;color:#bbb;">未記入</span>';
     }
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td style="font-size:12px;">${s.date.slice(5)}</td><td style="font-size:12px;"><span class="${isWe?'dow-we':''}">${DOW_NAMES[dow]}</span></td><td style="font-weight:600;font-size:13px;">${s.member}</td><td><span class="badge ${(BCLS[s.type]||'b-paid')}">${(LABELS[s.type]||s.type)}</span></td><td>${oc}</td><td style="font-size:12px;color:#888;">${s.note||''}</td><td style="text-align:center;display:flex;gap:4px;justify-content:center;"><button onclick="editShift(${s.id})" style="padding:2px 8px;font-size:11px;background:#4a90d9;color:#fff;border:none;border-radius:4px;cursor:pointer;">修正</button><button class="btn-danger" onclick="removeShift(${s.id})" style="padding:2px 8px;font-size:11px;">削除</button></td>`;
+    tr.innerHTML=`<td style="font-size:12px;">${s.date.slice(5)}</td><td style="font-size:12px;"><span class="${isWe?'dow-we':''}">${DOW_NAMES[dow]}</span></td><td style="font-weight:600;font-size:13px;">${s.member}</td><td><span class="badge ${(BCLS[s.type]||'b-paid')}">${(LABELS[s.type]||s.type)}</span></td><td>${oc}</td><td style="font-size:12px;color:#888;">${s.note||''}</td><td style="text-align:center;white-space:nowrap;"><button onclick="editShift(${s.id})" style="padding:2px 6px;font-size:11px;background:#4a90d9;color:#fff;border:none;border-radius:4px;cursor:pointer;white-space:nowrap;">修正</button> <button class="btn-danger" onclick="removeShift(${s.id})" style="padding:2px 6px;font-size:11px;white-space:nowrap;">削除</button></td>`;
     tbody.appendChild(tr);
   });
 }

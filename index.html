@@ -153,6 +153,15 @@ tr:last-child td{border-bottom:none;}
   </div>
 </div>
 
+<!-- 出社予定表 -->
+<div class="card" id="office-schedule-card">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+    <div class="sec-ttl" style="margin-bottom:0;">🏢 出社予定表</div>
+    <span style="font-size:12px;color:#888;">毎週木曜日</span>
+  </div>
+  <div id="office-schedule-body"></div>
+</div>
+
 <!-- 3. 登録済みシフト一覧 -->
 <div class="card">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0;">
@@ -847,7 +856,141 @@ function updateMonthSelect(){
   sel.value=ms.includes(cur)?cur:ms[ms.length-1];
 }
 
-function renderAll(){updateMonthSelect();renderSummary();renderList();renderMembers();}
+function renderAll(){updateMonthSelect();renderSummary();renderList();renderMembers();renderOfficeSchedule();}
+
+const OFFICE_MEMBERS=['堀川梓','小池圭太','清水結穂','小川鈴音','佐久間愛みり','松澤葵','古城紗也香','神愛莉沙'];
+const WED_OFFICE_MEMBERS=['堀川梓','小池圭太'];
+
+const INITIAL_OFFICE_CHANGES=[
+  {thursdayDate:'2026-06-04',member:'小川鈴音',reason:'',substituteDate:''},
+  {thursdayDate:'2026-06-04',member:'小池圭太',reason:'',substituteDate:''},
+];
+
+let officeChanges=(function(){
+  try{
+    const saved=localStorage.getItem('officeChanges-v1');
+    if(saved)return JSON.parse(saved);
+  }catch(e){}
+  return JSON.parse(JSON.stringify(INITIAL_OFFICE_CHANGES));
+})();
+
+function saveOfficeChanges(){try{localStorage.setItem('officeChanges-v1',JSON.stringify(officeChanges));}catch(e){}}
+
+function addOfficeChange(thursdayDate){
+  const member=document.getElementById('oc-member-'+thursdayDate).value;
+  const reason=document.getElementById('oc-reason-'+thursdayDate).value.trim();
+  const substituteDate=document.getElementById('oc-subdate-'+thursdayDate).value;
+  if(!member)return;
+  const exists=officeChanges.find(c=>c.thursdayDate===thursdayDate&&c.member===member);
+  if(exists){exists.reason=reason;exists.substituteDate=substituteDate;}
+  else{officeChanges.push({thursdayDate,member,reason,substituteDate});}
+  saveOfficeChanges();
+  renderOfficeSchedule();
+}
+
+function removeOfficeChange(thursdayDate,member){
+  officeChanges=officeChanges.filter(c=>!(c.thursdayDate===thursdayDate&&c.member===member));
+  saveOfficeChanges();
+  renderOfficeSchedule();
+}
+
+function renderOfficeSchedule(){
+  const container=document.getElementById('office-schedule-body');
+  // 今日から8週分の木曜日を取得
+  const today=new Date();
+  const thursdays=[];
+  const d=new Date(today);
+  // 今週の木曜日から
+  d.setDate(d.getDate()+(4-d.getDay()+7)%7);
+  for(let i=0;i<8;i++){
+    const ds=d.toISOString().slice(0,10);
+    thursdays.push(ds);
+    d.setDate(d.getDate()+7);
+  }
+  container.innerHTML='';
+  // 水曜日も8週分取得
+  // 6月〜7月末の水曜日を全て取得
+  const wednesdays=[];
+  const startW=new Date('2026-06-01');
+  const endW=new Date('2026-07-31');
+  const w=new Date(startW);
+  while(w.getDay()!==3)w.setDate(w.getDate()+1);
+  while(w<=endW){
+    wednesdays.push(w.toISOString().slice(0,10));
+    w.setDate(w.getDate()+7);
+  }
+
+  // 水曜出社セクション
+  const wedSection=document.createElement('div');
+  wedSection.style.cssText='margin-bottom:16px;';
+  wedSection.innerHTML='<div style="font-size:13px;font-weight:600;color:#555;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #eee;">📅 水曜日（イレギュラー出社）</div>';
+  wednesdays.forEach(ds=>{
+    const isToday=ds===todayStr2;
+    const changeList=officeChanges.filter(c=>c.thursdayDate===ds);
+    const dateLabel=ds.slice(5).replace('-','/');
+    const row=document.createElement('div');
+    row.style.cssText=`padding:10px 14px;border-radius:8px;margin-bottom:6px;background:${isToday?'#fff8f0':'#f9f9f9'};border:1px solid ${isToday?'#e63946':'#eee'};`;
+    row.innerHTML=`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        ${isToday?'<span class="today-badge">今日</span>':''}
+        <span style="font-size:13px;font-weight:600;">${dateLabel}（水）</span>
+        <span style="font-size:11px;color:#888;">堀川・小池圭太が追加出社</span>
+      </div>
+      ${changeList.length?`<div style="margin-bottom:6px;"><span style="font-size:11px;color:#c0392b;margin-right:4px;">⚠️ 当日変更（在宅）</span>${changeList.map(c=>`<span style="font-size:12px;color:#c0392b;background:#fdecea;padding:2px 7px;border-radius:4px;margin-right:4px;">${c.member}${c.reason?'（'+c.reason+'）':''}</span><span style="font-size:11px;color:#888;">${c.substituteDate?'→振替出社:'+c.substituteDate.slice(5).replace('-','/'):''}</span> <button onclick="removeOfficeChange('${ds}','${c.member}')" style="font-size:10px;padding:1px 5px;margin-right:6px;background:#fdecea;border:1px solid #f5c6c6;border-radius:3px;cursor:pointer;color:#c0392b;">削除</button>`).join('')}</div>`:''}
+      <details style="margin-top:2px;">
+        <summary style="font-size:12px;color:#888;cursor:pointer;">＋ 当日在宅変更を記録する</summary>
+        <div style="margin-top:8px;padding:10px;background:#fff;border-radius:6px;border:1px solid #eee;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;">
+          <div><label style="font-size:11px;color:#888;display:block;margin-bottom:2px;">メンバー</label>
+            <select id="oc-member-${ds}" style="font-size:12px;padding:4px 6px;">
+              <option value="">選択</option>
+              ${['堀川梓','小池圭太'].map(m=>`<option value="${m}">${m}</option>`).join('')}
+            </select>
+          </div>
+          <div><label style="font-size:11px;color:#888;display:block;margin-bottom:2px;">理由</label>
+            <input type="text" id="oc-reason-${ds}" placeholder="体調不良など" style="font-size:12px;padding:4px 6px;width:120px;">
+          </div>
+          <div><label style="font-size:11px;color:#888;display:block;margin-bottom:2px;">振替出社日</label>
+            <input type="date" id="oc-subdate-${ds}" style="font-size:12px;padding:4px 6px;">
+          </div>
+          <button onclick="addOfficeChange('${ds}')" style="font-size:12px;padding:4px 10px;background:#2c7be5;color:#fff;border:none;border-radius:4px;cursor:pointer;">記録</button>
+        </div>
+      </details>`;
+    wedSection.appendChild(row);
+  });
+  container.appendChild(wedSection);
+
+  // 木曜日セクション
+  const thuSection=document.createElement('div');
+  thuSection.innerHTML='<div style="font-size:13px;font-weight:600;color:#555;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #eee;">📅 木曜日（CS全員）</div>';
+  container.appendChild(thuSection);
+
+  thursdays.forEach(ds=>{
+    const isToday=ds===today.toISOString().slice(0,10);
+    const dayShifts=shifts.filter(s=>s.date===ds);
+    const absentMembers=dayShifts
+      .filter(s=>['furikae','paid','absent','we'].includes(s.type)||(LABELS[s.type]&&['振替休日','有給休暇','欠勤'].includes(LABELS[s.type])))
+      .map(s=>s.member);
+    const officeToday=OFFICE_MEMBERS.filter(m=>!absentMembers.includes(m));
+    const remoteToday=OFFICE_MEMBERS.filter(m=>absentMembers.includes(m));
+    const dateObj=new Date(ds);
+    const dateLabel=ds.slice(5).replace('-','/');
+    const row=document.createElement('div');
+    row.style.cssText=`padding:10px 12px;border-radius:8px;margin-bottom:8px;background:${isToday?'#fff8f0':'#f9f9f9'};border:1px solid ${isToday?'#e63946':'#eee'};`;
+    row.innerHTML=`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        ${isToday?'<span class="today-badge">今日</span>':''}
+        <span style="font-size:13px;font-weight:600;">${dateLabel}（木）</span>
+      </div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;">
+        <div>
+          <span style="font-size:11px;color:#888;margin-right:4px;">🏢 出社</span>
+          ${officeToday.length?officeToday.map(m=>`<span style="font-size:12px;font-weight:600;background:#E6F1FB;color:#0C447C;padding:2px 7px;border-radius:4px;margin-right:4px;">${m}</span>`).join(''):'<span style="font-size:12px;color:#bbb;">なし</span>'}
+        </div>
+        ${remoteToday.length?`<div><span style="font-size:11px;color:#888;margin-right:4px;">🏠 在宅/不在</span>${remoteToday.map(m=>`<span style="font-size:12px;color:#888;background:#f0f0f0;padding:2px 7px;border-radius:4px;margin-right:4px;">${m}</span>`).join('')}</div>`:''}
+      </div>`;
+    container.appendChild(row);
+  });
+}
 
 function renderSummary(){
   const mon=document.getElementById('view-month').value;

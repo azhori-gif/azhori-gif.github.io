@@ -858,15 +858,6 @@ function updateMonthSelect(){
 
 function renderAll(){updateMonthSelect();renderSummary();renderList();renderMembers();renderOfficeSchedule();}
 
-function toggleWedSection(){
-  const btn=document.getElementById('wed-toggle-btn');
-  const body=document.getElementById('wed-body-wrap');
-  if(!btn||!body)return;
-  const isOpen=body.style.display!=='none';
-  body.style.display=isOpen?'none':'';
-  btn.textContent=isOpen?'▼ 開く':'▲ 閉じる';
-}
-
 function toggleThuSection(){
   const body=document.getElementById('thu-body-wrap');
   const btn=document.getElementById('thu-toggle-btn');
@@ -876,39 +867,30 @@ function toggleThuSection(){
   btn.textContent=isOpen?'▼ 開く':'▲ 閉じる';
 }
 
-const OFFICE_MEMBERS=['堀川梓','小池圭太','清水結穂','小川鈴音','佐久間愛みり','松澤葵','古城紗也香','神愛莉沙'];
-const WED_OFFICE_MEMBERS=['堀川梓','小池圭太'];
+// 木曜日以外の出社データ
+const INITIAL_OTHER_DATES=['2026-06-17','2026-07-15'];
+const INITIAL_OTHER_ENTRIES=[
+  {date:'2026-06-17',member:'小池圭太'},
+  {date:'2026-06-17',member:'堀川梓'},
+  {date:'2026-07-15',member:'小池圭太'},
+  {date:'2026-07-15',member:'堀川梓'},
+  {date:'2026-07-15',member:'内田友里絵'},
+];
+let otherOfficeDates=(function(){try{const s=localStorage.getItem('otherDates-v1');if(s)return JSON.parse(s);}catch(e){}return [...INITIAL_OTHER_DATES];})();
+let otherOfficeEntries=(function(){try{const s=localStorage.getItem('otherEntries-v1');if(s)return JSON.parse(s);}catch(e){}return [...INITIAL_OTHER_ENTRIES];})();
+function saveOtherData(){try{localStorage.setItem('otherDates-v1',JSON.stringify(otherOfficeDates));localStorage.setItem('otherEntries-v1',JSON.stringify(otherOfficeEntries));}catch(e){}}
+function addOtherDate(){const val=document.getElementById('new-other-date').value;if(!val)return;if(!otherOfficeDates.includes(val)){otherOfficeDates.push(val);otherOfficeDates.sort();saveOtherData();}document.getElementById('new-other-date').value='';renderOfficeSchedule();}
+function addOtherEntry(ds){const member=document.getElementById('other-member-'+ds).value;if(!member)return;if(!otherOfficeEntries.find(e=>e.date===ds&&e.member===member)){otherOfficeEntries.push({date:ds,member});saveOtherData();}renderOfficeSchedule();}
+
+const OFFICE_MEMBERS=['小池圭太','堀川梓','清水結穂','小川鈴音','佐久間愛みり','松澤葵','古城紗也香','神愛莉沙'];
 
 const INITIAL_OFFICE_CHANGES=[
   {thursdayDate:'2026-06-04',member:'小川鈴音',reason:'',substituteDate:''},
   {thursdayDate:'2026-06-04',member:'小池圭太',reason:'',substituteDate:''},
-  {thursdayDate:'2026-06-17',member:'小池圭太',reason:'出社',substituteDate:''},
-  {thursdayDate:'2026-06-17',member:'堀川梓',reason:'出社',substituteDate:''},
-  {thursdayDate:'2026-07-15',member:'小池圭太',reason:'出社',substituteDate:''},
-  {thursdayDate:'2026-07-15',member:'堀川梓',reason:'出社',substituteDate:''},
-  {thursdayDate:'2026-07-15',member:'内田友里絵',reason:'出社',substituteDate:''},
+
+
 ];
 
-// 水曜出社日（デフォルト：6月・7月の第3水曜日）
-const DEFAULT_WED_DATES=['2026-06-17','2026-07-15'];
-let wedOfficeDates=(function(){
-  try{const s=localStorage.getItem('wedOfficeDates-v1');if(s)return JSON.parse(s);}catch(e){}
-  return [...DEFAULT_WED_DATES];
-})();
-function saveWedDates(){try{localStorage.setItem('wedOfficeDates-v1',JSON.stringify(wedOfficeDates));}catch(e){}}
-
-function addWedDate(){
-  const val=document.getElementById('new-wed-date').value;
-  if(!val)return;
-  if(!wedOfficeDates.includes(val)){wedOfficeDates.push(val);wedOfficeDates.sort();saveWedDates();}
-  document.getElementById('new-wed-date').value='';
-  renderOfficeSchedule();
-}
-function removeWedDate(ds){
-  wedOfficeDates=wedOfficeDates.filter(d=>d!==ds);
-  saveWedDates();
-  renderOfficeSchedule();
-}
 
 let officeChanges=(function(){
   try{
@@ -954,54 +936,7 @@ function renderOfficeSchedule(){
   }
   container.innerHTML='';
   // 水曜日も8週分取得
-  // 水曜出社セクション（wedOfficeDatesを使用）
-  const wedSection=document.createElement('div');
-  wedSection.style.cssText='margin-bottom:16px;';
-  wedSection.setAttribute('data-section','wed');
-  // ヘッダーをDOMで作成（innerHTML非使用でボタンを確実に取得できるように）
-  const wedHeaderDiv=document.createElement('div');
-  wedHeaderDiv.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #eee;';
-  const wedTitleSpan=document.createElement('span');
-  wedTitleSpan.style.cssText='font-size:13px;font-weight:600;color:#555;';
-  wedTitleSpan.textContent='📅 木曜日以外の出社';
-  const wedToggleBtn=document.createElement('button');
-  wedToggleBtn.id='wed-toggle-btn';
-  wedToggleBtn.style.cssText='font-size:12px;padding:3px 10px;';
-  wedToggleBtn.textContent='▲ 閉じる';
-  wedToggleBtn.setAttribute('onclick','toggleWedSection()');
-  const wedAddDetails=document.createElement('details');
-  wedAddDetails.style.cssText='font-size:12px;margin-left:auto;';
-  const wedAddSummary=document.createElement('summary');
-  wedAddSummary.style.cssText='cursor:pointer;color:#2c7be5;';
-  wedAddSummary.textContent='出社日を追加';
-  wedAddDetails.appendChild(wedAddSummary);
-  const wedAddDiv=document.createElement('div');
-  wedAddDiv.style.cssText='margin-top:6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;';
-  wedAddDiv.innerHTML='<input type="date" id="new-wed-date" style="font-size:12px;padding:3px 6px;"><button onclick="addWedDate()" style="font-size:12px;padding:3px 8px;background:#2c7be5;color:#fff;border:none;border-radius:4px;cursor:pointer;">追加</button><span style="font-size:11px;color:#888;">登録済み：'+wedOfficeDates.map(d=>'<span style="background:#f0f0f0;padding:1px 6px;border-radius:3px;margin-right:3px;">'+d.slice(5).replace('-','/')+'</span>').join('')+'</span>';
-  wedAddDetails.appendChild(wedAddDiv);
-  wedHeaderDiv.appendChild(wedTitleSpan);
-  wedHeaderDiv.appendChild(wedToggleBtn);
-  wedHeaderDiv.appendChild(wedAddDetails);
-  wedSection.appendChild(wedHeaderDiv);
-  const wednesdays=[...wedOfficeDates];
-  const wedBody=document.createElement('div');
-  wedBody.id='wed-body-wrap';
-  wedBody.style.display='';
-  wednesdays.forEach(ds=>{
-    const isToday=ds===todayStr2;
-    const changeList=officeChanges.filter(c=>c.thursdayDate===ds);
-    const dateLabel=ds.slice(5).replace('-','/');
-    const row=document.createElement('div');
-    row.style.cssText=`padding:10px 14px;border-radius:8px;margin-bottom:6px;background:${isToday?'#fff8f0':'#f9f9f9'};border:1px solid ${isToday?'#e63946':'#eee'};`;
-    row.innerHTML=`
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-        ${isToday?'<span class="today-badge">今日</span>':''}
-        <span style="font-size:13px;font-weight:600;">${dateLabel}（水）</span>
-      </div>
-      ${changeList.length?`<div style="margin-bottom:6px;"><span style="font-size:11px;color:#c0392b;margin-right:4px;">⚠️ 当日変更（在宅）</span>${changeList.map(c=>`<span style="font-size:12px;color:#c0392b;background:#fdecea;padding:2px 7px;border-radius:4px;margin-right:4px;">${c.member}${c.reason?'（'+c.reason+'）':''}</span><span style="font-size:11px;color:#888;">${c.substituteDate?'→振替出社:'+c.substituteDate.slice(5).replace('-','/'):''}</span> <button onclick="removeOfficeChange('${ds}','${c.member}')" style="font-size:10px;padding:1px 5px;margin-right:6px;background:#fdecea;border:1px solid #f5c6c6;border-radius:3px;cursor:pointer;color:#c0392b;">削除</button>`).join('')}</div>`:''}
-`;
-    wedSection.appendChild(row);
-  });
+
   // 木曜日セクション
   const thuSection=document.createElement('div');
   thuSection.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #eee;"><span style="font-size:13px;font-weight:600;color:#555;">📅 木曜日</span><button id="thu-toggle-btn" onclick="toggleThuSection()" style="font-size:12px;padding:3px 10px;">▼ 開く</button></div>';
@@ -1062,7 +997,66 @@ function renderOfficeSchedule(){
     thuBody.appendChild(row);
   });
   thuSection.appendChild(thuBody);
-  container.appendChild(wedSection);
+
+  // 木曜日以外の出社セクション
+  const otherSection=document.createElement('div');
+  otherSection.style.cssText='margin-top:16px;';
+
+  // ヘッダー（木曜日と同じ方式）
+  const otherHeader=document.createElement('div');
+  otherHeader.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #eee;';
+  otherHeader.innerHTML='<span style="font-size:13px;font-weight:600;color:#555;">📅 木曜日以外の出社</span>';
+
+  // ボディ（木曜日と同じ方式でクロージャ使用）
+  const otherBody=document.createElement('div');
+  otherBody.style.display='';
+
+  // 開閉ボタン
+  const otherToggleBtn=document.createElement('button');
+  otherToggleBtn.style.cssText='font-size:12px;padding:3px 10px;';
+  otherToggleBtn.textContent='▲ 閉じる';
+  otherToggleBtn.onclick=function(){
+    const isOpen=otherBody.style.display!=='none';
+    otherBody.style.display=isOpen?'none':'';
+    otherToggleBtn.textContent=isOpen?'▼ 開く':'▲ 閉じる';
+  };
+  otherHeader.appendChild(otherToggleBtn);
+
+  // 出社日追加ボタン
+  const otherAddBtn=document.createElement('span');
+  otherAddBtn.style.cssText='margin-left:auto;font-size:12px;';
+  const otherDatesStr=otherOfficeDates.map(d=>'<span style="background:#f0f0f0;padding:1px 6px;border-radius:3px;margin-right:3px;">'+d.slice(5).replace('-','/')+'</span>').join('');
+  otherAddBtn.innerHTML='<details><summary style="cursor:pointer;color:#2c7be5;">出社日を追加</summary><div style="margin-top:6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;"><input type="date" id="new-other-date" style="font-size:12px;padding:3px 6px;"><button onclick="addOtherDate()" style="font-size:12px;padding:3px 8px;background:#2c7be5;color:#fff;border:none;border-radius:4px;cursor:pointer;">追加</button><span style="font-size:11px;color:#888;">登録済み：'+otherDatesStr+'</span></div></details>';
+  otherHeader.appendChild(otherAddBtn);
+  otherSection.appendChild(otherHeader);
+
+  // 各日付の行
+  otherOfficeDates.forEach(ds=>{
+    const isToday=ds===today.toISOString().slice(0,10);
+    const dow=new Date(ds).getDay();
+    const dowNames=['日','月','火','水','木','金','土'];
+    const dateLabel=ds.slice(5).replace('-','/');
+    const otherMembers=otherOfficeEntries.filter(c=>c.date===ds).map(c=>c.member);
+    const row=document.createElement('div');
+    row.style.cssText='padding:10px 12px;border-radius:8px;margin-bottom:8px;background:'+(isToday?'#fff8f0':'#f9f9f9')+';border:1px solid '+(isToday?'#e63946':'#eee')+';';
+    const memberHtml=otherMembers.length
+      ? otherMembers.map(m=>'<span style="font-size:12px;font-weight:600;background:#E6F1FB;color:#0C447C;padding:2px 7px;border-radius:4px;margin-right:4px;">'+m+'</span>').join('')
+      : '<span style="font-size:12px;color:#bbb;">未登録</span>';
+    row.innerHTML=(isToday?'<span class="today-badge" style="margin-right:6px;">今日</span>':'')+
+      '<span style="font-size:13px;font-weight:600;">'+dateLabel+'（'+dowNames[dow]+'）</span>'+
+      '<div style="margin-top:6px;"><span style="font-size:11px;color:#888;margin-right:4px;">🏢 出社予定：</span>'+memberHtml+'</div>'+
+      '<details style="margin-top:8px;"><summary style="font-size:12px;color:#888;cursor:pointer;">＋ 出社メンバーを登録する</summary>'+
+      '<div style="margin-top:8px;padding:10px;background:#fff;border-radius:6px;border:1px solid #eee;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;">'+
+      '<div><label style="font-size:11px;color:#888;display:block;margin-bottom:2px;">メンバー</label>'+
+      '<select id="other-member-'+ds+'" style="font-size:12px;padding:4px 6px;"><option value="">選択</option>'+
+      OFFICE_MEMBERS.map(m=>'<option value="'+m+'">'+m+'</option>').join('')+
+      '</select></div>'+
+      '<button onclick="addOtherEntry(\'' + ds + '\')" style="font-size:12px;padding:4px 10px;background:#2c7be5;color:#fff;border:none;border-radius:4px;cursor:pointer;">登録</button>'+
+      '</div></details>';
+    otherBody.appendChild(row);
+  });
+  otherSection.appendChild(otherBody);
+  container.appendChild(otherSection);
 }
 
 function renderSummary(){

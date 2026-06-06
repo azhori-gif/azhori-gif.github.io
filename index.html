@@ -859,9 +859,9 @@ function updateMonthSelect(){
 function renderAll(){updateMonthSelect();renderSummary();renderList();renderMembers();renderOfficeSchedule();}
 
 function toggleWedSection(){
-  const body=document.getElementById('wed-body-wrap');
   const btn=document.getElementById('wed-toggle-btn');
-  if(!body||!btn)return;
+  const body=document.getElementById('wed-body-wrap');
+  if(!btn||!body)return;
   const isOpen=body.style.display!=='none';
   body.style.display=isOpen?'none':'';
   btn.textContent=isOpen?'▼ 開く':'▲ 閉じる';
@@ -912,13 +912,13 @@ function removeWedDate(ds){
 
 let officeChanges=(function(){
   try{
-    const saved=localStorage.getItem('officeChanges-v2');
+    const saved=localStorage.getItem('officeChanges-v3');
     if(saved)return JSON.parse(saved);
   }catch(e){}
   return JSON.parse(JSON.stringify(INITIAL_OFFICE_CHANGES));
 })();
 
-function saveOfficeChanges(){try{localStorage.setItem('officeChanges-v2',JSON.stringify(officeChanges));}catch(e){}}
+function saveOfficeChanges(){try{localStorage.setItem('officeChanges-v3',JSON.stringify(officeChanges));}catch(e){}}
 
 function addOfficeChange(thursdayDate){
   const member=document.getElementById('oc-member-'+thursdayDate).value;
@@ -957,6 +957,7 @@ function renderOfficeSchedule(){
   // 水曜出社セクション（wedOfficeDatesを使用）
   const wedSection=document.createElement('div');
   wedSection.style.cssText='margin-bottom:16px;';
+  wedSection.setAttribute('data-section','wed');
   // ヘッダーをDOMで作成（innerHTML非使用でボタンを確実に取得できるように）
   const wedHeaderDiv=document.createElement('div');
   wedHeaderDiv.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #eee;';
@@ -966,8 +967,8 @@ function renderOfficeSchedule(){
   const wedToggleBtn=document.createElement('button');
   wedToggleBtn.id='wed-toggle-btn';
   wedToggleBtn.style.cssText='font-size:12px;padding:3px 10px;';
-  wedToggleBtn.textContent='▼ 開く';
-  wedToggleBtn.onclick=toggleWedSection;
+  wedToggleBtn.textContent='▲ 閉じる';
+  wedToggleBtn.setAttribute('onclick','toggleWedSection()');
   const wedAddDetails=document.createElement('details');
   wedAddDetails.style.cssText='font-size:12px;margin-left:auto;';
   const wedAddSummary=document.createElement('summary');
@@ -985,7 +986,7 @@ function renderOfficeSchedule(){
   const wednesdays=[...wedOfficeDates];
   const wedBody=document.createElement('div');
   wedBody.id='wed-body-wrap';
-  wedBody.style.display='none';
+  wedBody.style.display='';
   wednesdays.forEach(ds=>{
     const isToday=ds===todayStr2;
     const changeList=officeChanges.filter(c=>c.thursdayDate===ds);

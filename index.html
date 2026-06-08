@@ -739,6 +739,10 @@ function renderOfficeSchedule(){
       // シフト上の休み：出社メンバーかつofficeChanges未登録のもののみ
       const offListMembers=offList.map(c=>c.member);
       const shiftAbsentOnly=shiftAbsentMembers.filter(m=>officeMembersDs.includes(m)&&!changeAbsent2.includes(m));
+      const allOffBadges=[
+  ...offList.map(c=>`<span style="font-size:12px;color:#856404;background:#FFF9C4;padding:2px 7px;border-radius:4px;margin-right:4px;">${c.member}${c.reason?'（'+c.reason+'）':''}</span>${c.substituteDate?'<span style="font-size:11px;color:#888;">→振替出社:'+c.substituteDate.slice(5).replace('-','/')+'</span>':''}`),
+  ...shiftAbsentOnly.map(m=>`<span style="font-size:12px;color:#856404;background:#FFF9C4;padding:2px 7px;border-radius:4px;margin-right:4px;">${m}</span>`)
+];
       row.innerHTML=`
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
         ${isToday?'<span class="today-badge">今日</span>':''}

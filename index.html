@@ -258,10 +258,6 @@ tr:last-child td{border-bottom:none;}
 const DOW_NAMES=['日','月','火','水','木','金','土'];
 const LABELS={we:'土日祝日出勤',furikae:'振替休日',paid:'有給休暇',halfpm:'午後休',halfam:'午前休',absent:'当日欠勤',workin:'出勤','土日祝日出勤':'土日祝日出勤','振替休日':'振替休日','有給休暇':'有給休暇','午後休':'午後休','午前休':'午前休','欠勤':'当日欠勤','当日欠勤':'当日欠勤','休暇':'有給休暇','時短':'時短','出勤':'出勤'};
 const BCLS={we:'b-we',furikae:'b-furikae',paid:'b-paid',halfpm:'b-halfpm',halfam:'b-halfam',absent:'b-absent','土日祝日出勤':'b-we','振替休日':'b-furikae','有給休暇':'b-paid','午後休':'b-halfpm','午前休':'b-halfam','欠勤':'b-absent','休暇':'b-paid','時短':'b-halfpm'};
-const STORAGE_KEY='shift-mgr-v4';
-// 古いバージョンのキャッシュを削除
-['shift-mgr-v1','shift-mgr-v2','shift-mgr-v3'].forEach(k=>localStorage.removeItem(k));
-
 
 const COMPANY_HOLIDAYS=['2026-08-13','2026-08-14'];
 
@@ -289,30 +285,17 @@ let MEMBERS=[
 
 // 野口さんの週例外（6/30週と7/1週は全曜日出勤）
 MEMBERS.find(m=>m.name==='野口和代').exceptions=[
-  {week:'2026-06-29',offDays:[]},
+  {week:'2026-06-22',offDays:[]},
   {week:'2026-06-29',offDays:[]}
-];
-
-const INITIAL_SHIFTS=[
 ];
 
 let shifts=[];
 let editingIdx=-1;
 let editExceptions=[];
 
-function save(){
-  try{localStorage.setItem(STORAGE_KEY,JSON.stringify({shifts,members:MEMBERS}));}catch(e){}
-}
+function save(){}
 function load(){
-  shifts=INITIAL_SHIFTS.map((s,i)=>({...s,id:i+1}));
-  try{
-    const d=localStorage.getItem(STORAGE_KEY);
-    if(d){
-      const p=JSON.parse(d);
-      if(p.shifts&&p.shifts.length>0)shifts=p.shifts;
-      if(p.members)MEMBERS=p.members;
-    }
-  }catch(e){}
+  shifts=[];
   shifts.sort((a,b)=>a.date.localeCompare(b.date)||a.member.localeCompare(b.member));
 }
 
@@ -638,34 +621,23 @@ function toggleThuSection(){
   btn.textContent=isOpen?'▼ 開く':'▲ 閉じる';
 }
 
-// 木曜日以外の出社データ（初期データは空：Notion CSVから取り込む）
-const INITIAL_OTHER_DATES=[];
-const INITIAL_OTHER_ENTRIES=[];
-let otherOfficeDates=(function(){try{const s=localStorage.getItem('otherDates-v2');if(s)return JSON.parse(s);}catch(e){}return [...INITIAL_OTHER_DATES];})();
-let otherOfficeEntries=(function(){try{const s=localStorage.getItem('otherEntries-v2');if(s)return JSON.parse(s);}catch(e){}return [...INITIAL_OTHER_ENTRIES];})();
-let otherDateMemos=(function(){try{const s=localStorage.getItem('otherMemos-v1');if(s)return JSON.parse(s);}catch(e){}return {};})();
-function saveOtherData(){try{localStorage.setItem('otherDates-v2',JSON.stringify(otherOfficeDates));localStorage.setItem('otherEntries-v2',JSON.stringify(otherOfficeEntries));localStorage.setItem('otherMemos-v1',JSON.stringify(otherDateMemos));}catch(e){}}
-function addOtherDate(){const val=document.getElementById('new-other-date').value;if(!val)return;if(!otherOfficeDates.includes(val)){otherOfficeDates.push(val);otherOfficeDates.sort();saveOtherData();}document.getElementById('new-other-date').value='';renderOfficeSchedule();}
-function addOtherEntry(ds){const member=document.getElementById('other-member-'+ds).value;if(!member)return;if(!otherOfficeEntries.find(e=>e.date===ds&&e.member===member)){otherOfficeEntries.push({date:ds,member});saveOtherData();}renderOfficeSchedule();}
+// 木曜日以外の出社データ（HTMLに直接埋め込み・GitHubで管理）
+let otherOfficeDates=[];
+let otherOfficeEntries=[];
+let otherDateMemos={};
+function saveOtherData(){}
+function addOtherDate(){}
+function addOtherEntry(){}
 
 const OFFICE_MEMBERS_BASE=['小池圭太','堀川梓','清水結穂','小川鈴音','佐久間愛みり','松澤葵','古城紗也香','神愛莉沙'];
 const OFFICE_MEMBERS_FROM_JULY=['小池圭太','堀川梓','清水結穂','小川鈴音','佐久間愛みり','松澤葵','古城紗也香','神愛莉沙','内田友里絵'];
 function getOfficeMembersForDate(ds){return ds>='2026-07-01'?OFFICE_MEMBERS_FROM_JULY:OFFICE_MEMBERS_BASE;}
-const OFFICE_MEMBERS=OFFICE_MEMBERS_FROM_JULY; // プルダウン用（全員）
+const OFFICE_MEMBERS=OFFICE_MEMBERS_FROM_JULY;
 
-// 木曜日の変更データ（初期データは空：Notion CSVから取り込む）
-const INITIAL_OFFICE_CHANGES=[];
+// 木曜日の変更データ（HTMLに直接埋め込み・GitHubで管理）
+let officeChanges=[];
 
-
-let officeChanges=(function(){
-  try{
-    const saved=localStorage.getItem('officeChanges-v3');
-    if(saved)return JSON.parse(saved);
-  }catch(e){}
-  return JSON.parse(JSON.stringify(INITIAL_OFFICE_CHANGES));
-})();
-
-function saveOfficeChanges(){try{localStorage.setItem('officeChanges-v3',JSON.stringify(officeChanges));}catch(e){}}
+function saveOfficeChanges(){}
 
 function addOfficeChange(thursdayDate){
   const member=document.getElementById('oc-member-'+thursdayDate).value;
@@ -1211,20 +1183,17 @@ function importOfficeCSV(){
           rawMembers.forEach(member=>{
             if(!member)return;
             if(dow===4){
-              // 木曜日：出社以外を記録
               if(status==='office'){skipped++;return;}
               const dup=officeChanges.find(c=>c.thursdayDate===date&&c.member===member);
               if(dup){skipped++;return;}
               officeChanges.push({thursdayDate:date,member,reason:note,substituteDate:'',status});
               addedEntries++;
             } else {
-              // 木曜日以外：出社のみ記録
               if(status!=='office'){skipped++;return;}
               if(!otherOfficeDates.includes(date)){
                 otherOfficeDates.push(date);
                 otherOfficeDates.sort();
               }
-              // 備考をメモとして保存（日付単位で1つ、上書き）
               if(note)otherDateMemos[date]=note;
               const dup=otherOfficeEntries.find(c=>c.date===date&&c.member===member);
               if(dup){skipped++;return;}
@@ -1233,13 +1202,24 @@ function importOfficeCSV(){
             }
           });
         }
-        saveOtherData();
-        saveOfficeChanges();
         renderAll();
-        const resultEl=document.getElementById('office-import-result');
-        resultEl.style.display='block';
-        resultEl.style.color=addedEntries>0?'#3B6D11':'#888';
-        resultEl.textContent=`出社予定を上書き取り込み完了：${addedEntries}件${errors>0?'、'+errors+'件エラー':''}`;
+        // GitHubに埋め込むコードを生成してコピー
+        const datesCode=`let otherOfficeDates=${JSON.stringify(otherOfficeDates)};`;
+        const entriesCode=`let otherOfficeEntries=${JSON.stringify(otherOfficeEntries,null,2)};`;
+        const memosCode=`let otherDateMemos=${JSON.stringify(otherDateMemos)};`;
+        const changesCode=`let officeChanges=${JSON.stringify(officeChanges,null,2)};`;
+        const outputCode=`${datesCode}\n${entriesCode}\n${memosCode}\n${changesCode}`;
+        navigator.clipboard.writeText(outputCode).then(()=>{
+          const resultEl=document.getElementById('office-import-result');
+          resultEl.style.display='block';
+          resultEl.style.color='#3B6D11';
+          resultEl.innerHTML=`✅ ${addedEntries}件を取り込みました。<br>📋 HTMLに埋め込むコードをクリップボードにコピーしました！<br><span style="font-size:11px;color:#888;">Claudeに「コードを貼り付けてGitHub用HTMLを更新して」と依頼してください。</span>`;
+        }).catch(()=>{
+          const resultEl=document.getElementById('office-import-result');
+          resultEl.style.display='block';
+          resultEl.style.color='#856404';
+          resultEl.innerHTML=`✅ ${addedEntries}件を取り込みました。<br>⚠️ クリップボードへのコピーに失敗しました。以下のコードをコピーしてClaudeに渡してください：<br><textarea style="width:100%;height:80px;font-size:10px;margin-top:4px;">${outputCode}</textarea>`;
+        });
       }catch(err){alert('CSVの読み込みに失敗しました：'+err.message);}
     };
     reader.readAsText(file,'UTF-8');

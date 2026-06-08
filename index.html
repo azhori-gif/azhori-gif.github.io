@@ -1060,8 +1060,9 @@ function importNotionCSV(){
         const nameMap={'梓 堀川':'堀川梓','武末 夏海':'武末夏海','mai.kitabori@paytner.co.jp':'北堀麻衣'};
         // 種別マッピング
         const typeMap={'有給休暇':'paid','休暇':'paid','午前休':'halfam','午後休':'halfpm','振替休日':'furikae','土日出勤':'we','土日祝日出勤':'we','欠勤':'absent','当日欠勤':'absent','時短':'halfpm','出勤':'workin'};
+        // 上書きモード：既存シフトをリセット
+        shifts=[];
         let added=0,skipped=0,errors=0;
-        const newShifts=[];
         for(let i=1;i<lines.length;i++){
           const cols=lines[i].split(',').map(c=>c.trim().replace(/^"|"$/g,''));
           if(cols.length<3)continue;
@@ -1073,21 +1074,26 @@ function importNotionCSV(){
           const date=parseJpDate(dateRaw);
           if(!date){errors++;continue;}
           const type=typeMap[typeRaw]||typeRaw;
-          // 重複チェック
           const dup=shifts.find(s=>s.date===date&&s.member===member&&s.type===type);
           if(dup){skipped++;continue;}
-          newShifts.push({id:Date.now()+i,date,member,type,note,originDate:''});
+          shifts.push({id:i,date,member,type,note,originDate:''});
           added++;
         }
-        if(newShifts.length>0){
-          shifts=[...shifts,...newShifts];
-          shifts.sort((a,b)=>a.date.localeCompare(b.date)||a.member.localeCompare(b.member));
-          save();renderAll();
-        }
-        const resultEl=document.getElementById('notion-import-result');
-        resultEl.style.display='block';
-        resultEl.style.color=added>0?'#3B6D11':'#888';
-        resultEl.textContent=`取り込み完了：${added}件追加、${skipped}件重複スキップ${errors>0?'、'+errors+'件エラー':''}`;
+        shifts.sort((a,b)=>a.date.localeCompare(b.date)||a.member.localeCompare(b.member));
+        renderAll();
+        // GitHubに埋め込むコードを生成してコピー
+        const shiftsCode=`let shifts=${JSON.stringify(shifts,null,2)};`;
+        navigator.clipboard.writeText(shiftsCode).then(()=>{
+          const resultEl=document.getElementById('notion-import-result');
+          resultEl.style.display='block';
+          resultEl.style.color='#3B6D11';
+          resultEl.innerHTML=`✅ ${added}件を取り込みました。<br>📋 HTMLに埋め込むコードをクリップボードにコピーしました！<br><span style="font-size:11px;color:#888;">Claudeに「コードを貼り付けてGitHub用HTMLを更新して」と依頼してください。</span>`;
+        }).catch(()=>{
+          const resultEl=document.getElementById('notion-import-result');
+          resultEl.style.display='block';
+          resultEl.style.color='#856404';
+          resultEl.innerHTML=`✅ ${added}件を取り込みました。<br>⚠️ クリップボードへのコピーに失敗しました。以下のコードをコピーしてClaudeに渡してください：<br><textarea style="width:100%;height:80px;font-size:10px;margin-top:4px;">${shiftsCode}</textarea>`;
+        });
       }catch(err){alert('CSVの読み込みに失敗しました：'+err.message);}
     };
     reader.readAsText(file,'UTF-8');

@@ -1187,10 +1187,14 @@ function renderSummary(){
     if(absent.length)detail.push(`<span class="badge b-absent">${absent.map(s=>s.member).join('・')}　欠勤</span>`);
     if(fixedOffNames.length)detail.push(`<span class="badge b-fixoff">${fixedOffNames.join('・')}　固定休</span>`);
     if(isHoliday)detail.push('<span style="font-size:11px;color:#854f0b;">🏢 会社休日</span>');
-    const cc=isHoliday?(weWork.length?`<span style="color:#3B6D11;font-weight:600;">${weWork.length}人</span>`:'<span style="color:#bbb;">会社休</span>'):isWe?(weWork.length?`<span style="color:#3B6D11;font-weight:600;">${weWork.length}人</span>`:'<span style="color:#bbb;">—</span>'):`<span style="font-weight:600;">${wc}人</span>`;
+    const alertMark=(!isHoliday&&!isWe)?(wc<=9?'🔴 ':wc===10?'🟡 ':''):'';
+    const ccColor=(!isHoliday&&!isWe)?(wc<=9?'#c0392b':wc===10?'#e67e22':''):'';
+    const cc=isHoliday?(weWork.length?`<span style="color:#3B6D11;font-weight:600;">${weWork.length}人</span>`:'<span style="color:#bbb;">会社休</span>'):isWe?(weWork.length?`<span style="color:#3B6D11;font-weight:600;">${weWork.length}人</span>`:'<span style="color:#bbb;">—</span>'):`<span style="font-weight:600;${ccColor?'color:'+ccColor+';':''}">${alertMark}${wc}人</span>`;
     const tr=document.createElement('tr');
     const isToday=ds===new Date().toISOString().slice(0,10);
     if(isToday)tr.style.cssText='background:#fff8f0;border-left:3px solid #e63946;';
+    else if(!isHoliday&&!isWe&&wc<=9)tr.style.cssText='background:#fff0f0;';
+    else if(!isHoliday&&!isWe&&wc===10)tr.style.cssText='background:#fffbf0;';
     // 出社人数（木曜日のみ）
     let officeCnt='—';
     if(dow===4){

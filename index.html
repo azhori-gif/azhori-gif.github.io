@@ -376,11 +376,8 @@ function fixNoguchi(){
   const m=MEMBERS.find(x=>x.name==='野口和代');
   if(!m)return;
   m.exceptions=[
-    {week:'2026-06-29',offDays:[]},
     {week:'2026-06-29',offDays:[]}
   ];
-  // 6/30週（月曜=6/29）と7/1週（月曜=6/29は同じ週）
-  m.exceptions=[{week:'2026-06-22',offDays:[]},{week:'2026-06-29',offDays:[]}];
 }
 
 // 初期化
